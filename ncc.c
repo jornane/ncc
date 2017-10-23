@@ -25,9 +25,11 @@ int readdata(int fd, char *data, size_t datalen)
 	return retval;
 }
 
-int writedata(int fd, char *data, size_t datalen) {
+int writedata(int fd, char *data, size_t datalen)
+{
 	int retval = write(fd, data, datalen);
-	if (retval < 0) {
+	if (retval < 0)
+	{
 		if (fd == STDOUT)
 		{
 			perror("write to stdout");
@@ -40,7 +42,8 @@ int writedata(int fd, char *data, size_t datalen) {
 	return retval;
 }
 
-int selectdata(int sock, fd_set *readfds, fd_set *writefds, int has_data_for_tcp, int has_data_for_stdout) {
+int selectdata(int sock, fd_set *readfds, fd_set *writefds, int has_data_for_tcp, int has_data_for_stdout)
+{
 	FD_ZERO(readfds);
 	if (!has_data_for_tcp) FD_SET(STDIN, readfds);
 	if (!has_data_for_stdout) FD_SET(sock, readfds);
@@ -69,7 +72,6 @@ int main(int argc, char **argv)
 		fputs("Could not create socket\n", stderr);
 		return 1;
 	}
-	fputs("Socket created\n", stderr);
 
 	server.sin_addr.s_addr = inet_addr("127.0.0.1");
 	server.sin_family = AF_INET;
@@ -99,7 +101,8 @@ int main(int argc, char **argv)
 		if (FD_ISSET(STDIN, &readfds))
 		{
 			len_data_for_tcp = readdata(STDIN, message, sizeof(message));
-			if (len_data_for_tcp == 0) {
+			if (len_data_for_tcp == 0)
+			{
 				terminating = 1;
 			}
 		}
@@ -107,7 +110,8 @@ int main(int argc, char **argv)
 		if (FD_ISSET(sock, &readfds))
 		{
 			len_data_for_stdout = readdata(sock, server_reply, sizeof(server_reply));
-			if (len_data_for_stdout == 0) {
+			if (len_data_for_stdout == 0)
+			{
 				terminating = 1;
 			}
 		}
