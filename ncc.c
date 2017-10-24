@@ -91,7 +91,7 @@ int main(int argc, char **argv)
 	int terminating = 0;
 
 	//keep communicating with server
-	while (!terminating || len_data_for_stdout || len_data_for_tcp)
+	while (terminating != 3 || len_data_for_stdout || len_data_for_tcp)
 	{
 		if (-1 == selectdata(sock, &readfds, &writefds, len_data_for_tcp, len_data_for_stdout))
 		{
@@ -103,7 +103,8 @@ int main(int argc, char **argv)
 			len_data_for_tcp = readdata(STDIN, message, sizeof(message));
 			if (len_data_for_tcp == 0)
 			{
-				terminating = 1;
+				terminating |= 1;
+				shutdown(sock, SHUT_WR);
 			}
 		}
 
@@ -112,7 +113,8 @@ int main(int argc, char **argv)
 			len_data_for_stdout = readdata(sock, server_reply, sizeof(server_reply));
 			if (len_data_for_stdout == 0)
 			{
-				terminating = 1;
+				terminating |= 2;
+				shutdown(sock, SHUT_RD);
 			}
 		}
 
