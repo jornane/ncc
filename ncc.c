@@ -91,7 +91,7 @@ int main(int argc, char **argv)
 	int terminating = 0;
 
 	//keep communicating with server
-	while (!terminating || en_data_for_stdout || len_data_for_tcp)
+	while (!terminating || len_data_for_stdout || len_data_for_tcp)
 	{
 		if (-1 == selectdata(sock, &readfds, &writefds, len_data_for_tcp, len_data_for_stdout))
 		{
