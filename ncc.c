@@ -14,14 +14,7 @@ int readdata(int fd, char *data, size_t datalen)
 	int retval = read(fd, data, datalen);
 	if (retval < 0)
 	{
-		if (fd == STDIN)
-		{
-			perror("read from stdin");
-		}
-		else
-		{
-			perror("read from socket");
-		}
+		perror(fd == STDIN ? "read() from stdin" : "");
 	}
 	return retval;
 }
@@ -31,14 +24,7 @@ int writedata(int fd, char *data, size_t datalen)
 	int retval = write(fd, data, datalen);
 	if (retval < 0)
 	{
-		if (fd == STDOUT)
-		{
-			perror("write to stdout");
-		}
-		else
-		{
-			perror("write to socket");
-		}
+		perror(fd == STDOUT ? "write() to stdout" : "");
 	}
 	return retval;
 }
@@ -72,7 +58,7 @@ int main(int argc, char **argv)
 	char message[65535], server_reply[65535];
 
 	//Create socket
-	sock = socket(AF_INET, SOCK_STREAM, 0);
+	sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (sock == -1)
 	{
 		fputs("Could not create socket\n", stderr);
@@ -107,6 +93,7 @@ int main(int argc, char **argv)
 
 		if (FD_ISSET(STDIN, &readfds))
 		{
+			//fprintf(stderr, "<");
 			len_data_for_tcp = readdata(STDIN, message, sizeof(message));
 			if (len_data_for_tcp == 0)
 			{
@@ -117,22 +104,27 @@ int main(int argc, char **argv)
 
 		if (FD_ISSET(sock, &readfds))
 		{
+			//fprintf(stderr, "v");
 			len_data_for_stdout = readdata(sock, server_reply, sizeof(server_reply));
+			// Socket didn't give us any data; assume FIN,ACK
 			if (len_data_for_stdout == 0)
 			{
 				terminating |= 2;
 				shutdown(sock, SHUT_RD);
+				fprintf(stderr, "\nConnection closed\n");
 			}
 		}
 
 		if (FD_ISSET(STDOUT, &writefds))
 		{
+			//fprintf(stderr, ">");
 			writedata(STDOUT, server_reply, len_data_for_stdout);
 			len_data_for_stdout = 0;
 		}
 
 		if (FD_ISSET(sock, &writefds))
 		{
+			//fprintf(stderr, "^");
 			writedata(sock, message, len_data_for_tcp);
 			len_data_for_tcp = 0;
 		}
