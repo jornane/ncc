@@ -2,6 +2,7 @@
 #include <sys/socket.h>	//socket
 #include <arpa/inet.h>	//inet_addr
 #include <unistd.h>	//write, close
+#include <stdlib.h>	//atoi
 
 #include <sys/select.h>	//select
 
@@ -61,6 +62,11 @@ int selectdata(int sock, fd_set *readfds, fd_set *writefds, int has_data_for_tcp
 
 int main(int argc, char **argv)
 {
+	if (argc != 3) {
+		fprintf(stderr, "Usage: %s host port\n", argv[0]);
+		return 2;
+	}
+
 	int sock;
 	struct sockaddr_in server;
 	char message[65535], server_reply[65535];
@@ -73,18 +79,19 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	server.sin_addr.s_addr = inet_addr("127.0.0.1");
+	server.sin_addr.s_addr = inet_addr(argv[1]);
 	server.sin_family = AF_INET;
-	server.sin_port = htons(8888);
+	server.sin_port = htons(atoi(argv[2]));
 
 	//Connect to remote server
+	fprintf(stderr, "Trying %s...", argv[1]);
 	if (connect(sock, (struct sockaddr *)&server, sizeof(server)) < 0)
 	{
-		perror("Connection failed");
+		perror("\nConnection failed");
 		return 1;
 	}
 
-	fputs("Connected\n", stderr);
+	fprintf(stderr, " Connected.\n");
 
 	fd_set readfds, writefds;
 	int len_data_for_tcp = 0, len_data_for_stdout = 0;
