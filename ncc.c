@@ -9,6 +9,9 @@
 #define STDIN 0
 #define STDOUT 1
 
+#define SOCK_LOCAL 1
+#define SOCK_REMOTE 2
+
 int readdata(int fd, char *data, size_t datalen)
 {
 	int retval = read(fd, data, datalen);
@@ -29,11 +32,11 @@ int writedata(int fd, char *data, size_t datalen)
 	return retval;
 }
 
-int selectdata(int sock, fd_set *readfds, fd_set *writefds, int has_data_for_tcp, int has_data_for_stdout)
+int selectdata(int sock, fd_set *readfds, fd_set *writefds, int has_data_for_tcp, int has_data_for_stdout, int dead_sock_map)
 {
 	FD_ZERO(readfds);
-	if (!has_data_for_tcp) FD_SET(STDIN, readfds);
-	if (!has_data_for_stdout) FD_SET(sock, readfds);
+	if (!has_data_for_tcp && !(dead_sock_map & SOCK_LOCAL)) FD_SET(STDIN, readfds);
+	if (!has_data_for_stdout && !(dead_sock_map & SOCK_REMOTE)) FD_SET(sock, readfds);
 	FD_ZERO(writefds);
 	if (has_data_for_tcp) FD_SET(sock, writefds);
 	if (has_data_for_stdout) FD_SET(STDOUT, writefds);
@@ -81,12 +84,11 @@ int main(int argc, char **argv)
 
 	fd_set readfds, writefds;
 	int len_data_for_tcp = 0, len_data_for_stdout = 0;
-	int terminating = 0;
+	int dead_sock_map = 0;
 
-	//keep communicating with server
-	while (terminating != 3 || len_data_for_stdout || len_data_for_tcp)
+	while (!dead_sock_map || len_data_for_stdout || len_data_for_tcp)
 	{
-		if (-1 == selectdata(sock, &readfds, &writefds, len_data_for_tcp, len_data_for_stdout))
+		if (0 > selectdata(sock, &readfds, &writefds, len_data_for_tcp, len_data_for_stdout, dead_sock_map))
 		{
 			return 1;
 		}
@@ -97,8 +99,8 @@ int main(int argc, char **argv)
 			len_data_for_tcp = readdata(STDIN, message, sizeof(message));
 			if (len_data_for_tcp == 0)
 			{
-				terminating |= 1;
 				shutdown(sock, SHUT_WR);
+				dead_sock_map |= SOCK_LOCAL;
 			}
 		}
 
@@ -109,9 +111,10 @@ int main(int argc, char **argv)
 			// Socket didn't give us any data; assume FIN,ACK
 			if (len_data_for_stdout == 0)
 			{
-				terminating |= 2;
-				shutdown(sock, SHUT_RD);
 				fprintf(stderr, "\nConnection closed\n");
+				// TODO: too harsh, there may still be data in a pipe somewhere
+				break;
+				dead_sock_map |= SOCK_REMOTE;
 			}
 		}
 
