@@ -6,6 +6,9 @@
 
 #include <sys/select.h>	//select
 
+#include <netdb.h>	// sockaddr_in (OpenBSD)
+#include <netinet/in.h>	// sockaddr_in (FreeBSD)
+
 #define STDIN 0
 #define STDOUT 1
 
@@ -61,7 +64,7 @@ int main(int argc, char **argv)
 	char message[65535], server_reply[65535];
 
 	//Create socket
-	sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock == -1)
 	{
 		fputs("Could not create socket\n", stderr);
