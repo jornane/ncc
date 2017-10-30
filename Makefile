@@ -1,2 +1,5 @@
+CC=cc
+CCFLAGS=-Wall
+
 ncc: ncc.c
-	clang ncc.c -o ncc
+	$(CC) $(CCFLAGS) ncc.c -o ncc
