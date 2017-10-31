@@ -35,7 +35,7 @@ int writedata(int fd, char *data, size_t datalen)
 	return retval;
 }
 
-int selectdata(int sock, fd_set *readfds, fd_set *writefds, int has_data_for_tcp, int has_data_for_stdout, int dead_sock_map)
+int wait_for_data(int sock, fd_set *readfds, fd_set *writefds, int has_data_for_tcp, int has_data_for_stdout, int dead_sock_map)
 {
 	FD_ZERO(readfds);
 	if (!has_data_for_tcp && !(dead_sock_map & SOCK_LOCAL)) FD_SET(STDIN, readfds);
@@ -91,7 +91,7 @@ int main(int argc, char **argv)
 
 	while (!dead_sock_map || len_data_for_stdout || len_data_for_tcp)
 	{
-		if (0 > selectdata(sock, &readfds, &writefds, len_data_for_tcp, len_data_for_stdout, dead_sock_map))
+		if (0 > wait_for_data(sock, &readfds, &writefds, len_data_for_tcp, len_data_for_stdout, dead_sock_map))
 		{
 			return 1;
 		}
