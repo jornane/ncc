@@ -9,6 +9,13 @@
 #include <netdb.h>	// sockaddr_in (OpenBSD)
 #include <netinet/in.h>	// sockaddr_in (FreeBSD)
 
+#include <string.h>
+
+#include <arpa/inet.h>
+#include <netinet/in.h>
+
+#include <errno.h>
+
 #define STDIN 0
 #define STDOUT 1
 
@@ -52,38 +59,93 @@ int wait_for_data(int sock, fd_set *readfds, fd_set *writefds, int has_data_for_
 	return retval;
 }
 
+int get_socket(char **argv)
+{
+	int sfd, s;
+	struct addrinfo *result, *rp;
+	struct addrinfo hints;
+	char addr_str[INET6_ADDRSTRLEN];
+
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = 0;
+	hints.ai_protocol = 0;          /* Any protocol */
+
+	s = getaddrinfo(argv[1], argv[2], &hints, &result);
+	if (s != 0)
+	{
+		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
+		return -1;
+	}
+
+	for (rp = result; rp != NULL; rp = rp->ai_next) {
+		sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+		if (sfd == -1)
+		{
+			perror("Unable to create socket");
+			continue;
+		}
+
+		if (rp->ai_family == AF_INET)
+		{
+			if (!inet_ntop(AF_INET, &(((struct sockaddr_in *) rp->ai_addr)->sin_addr), addr_str, INET_ADDRSTRLEN))
+			{
+				perror("Unable to read address");
+				continue;
+			}
+			fprintf(stderr, "Trying %s:%s...", addr_str, argv[2]);
+		}
+		else if (rp->ai_family == AF_INET6)
+		{
+			if (!inet_ntop(AF_INET6, &(((struct sockaddr_in6 *) rp->ai_addr)->sin6_addr), addr_str, INET6_ADDRSTRLEN))
+			{
+				perror("Unable to read address");
+				continue;
+			}
+			fprintf(stderr, "Trying [%s]:%s...", addr_str, argv[2]);
+		}
+		else
+		{
+			fprintf(stderr, "Unknown address family\n");
+			continue;
+		}
+
+		if (connect(sfd, rp->ai_addr, rp->ai_addrlen) != -1)
+		{
+			fprintf(stderr, " Connected.\n");
+			freeaddrinfo(result);
+			return sfd;
+		}
+		else
+		{
+			fprintf(stderr, " %s\n", strerror(errno));
+		}
+
+		close(sfd);
+	}
+
+	return -1;
+}
+
 int main(int argc, char **argv)
 {
-	if (argc != 3) {
+	if (argc != 3)
+	{
 		fprintf(stderr, "Usage: %s host port\n", argv[0]);
 		return 2;
 	}
 
 	int sock;
-	struct sockaddr_in server;
 	char message[65535], server_reply[65535];
 
 	//Create socket
-	sock = socket(AF_INET, SOCK_STREAM, 0);
+	sock = get_socket(argv);
 	if (sock == -1)
 	{
 		fputs("Could not create socket\n", stderr);
 		return 1;
 	}
-
-	server.sin_addr.s_addr = inet_addr(argv[1]);
-	server.sin_family = AF_INET;
-	server.sin_port = htons(atoi(argv[2]));
-
-	//Connect to remote server
-	fprintf(stderr, "Trying %s...", argv[1]);
-	if (connect(sock, (struct sockaddr *)&server, sizeof(server)) < 0)
-	{
-		perror("\nConnection failed");
-		return 1;
-	}
-
-	fprintf(stderr, " Connected.\n");
 
 	fd_set readfds, writefds;
 	int len_data_for_tcp = 0, len_data_for_stdout = 0;
@@ -91,7 +153,7 @@ int main(int argc, char **argv)
 
 	while (!dead_sock_map || len_data_for_stdout || len_data_for_tcp)
 	{
-		if (0 > wait_for_data(sock, &readfds, &writefds, len_data_for_tcp, len_data_for_stdout, dead_sock_map))
+		if (-1 == wait_for_data(sock, &readfds, &writefds, len_data_for_tcp, len_data_for_stdout, dead_sock_map))
 		{
 			return 1;
 		}
