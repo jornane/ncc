@@ -59,7 +59,7 @@ int wait_for_data(int sock, fd_set *readfds, fd_set *writefds, int has_data_for_
 	return retval;
 }
 
-int get_socket(char **argv)
+int get_socket(char *host, char *service)
 {
 	int sfd, s;
 	struct addrinfo *result, *rp;
@@ -72,7 +72,7 @@ int get_socket(char **argv)
 	hints.ai_flags = 0;
 	hints.ai_protocol = 0;          /* Any protocol */
 
-	s = getaddrinfo(argv[1], argv[2], &hints, &result);
+	s = getaddrinfo(host, service, &hints, &result);
 	if (s != 0)
 	{
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
@@ -94,7 +94,7 @@ int get_socket(char **argv)
 				perror("Unable to read address");
 				continue;
 			}
-			fprintf(stderr, "Trying %s:%s...", addr_str, argv[2]);
+			fprintf(stderr, "Trying %s:%s...", addr_str, service);
 		}
 		else if (rp->ai_family == AF_INET6)
 		{
@@ -103,7 +103,7 @@ int get_socket(char **argv)
 				perror("Unable to read address");
 				continue;
 			}
-			fprintf(stderr, "Trying [%s]:%s...", addr_str, argv[2]);
+			fprintf(stderr, "Trying [%s]:%s...", addr_str, service);
 		}
 		else
 		{
@@ -140,7 +140,7 @@ int main(int argc, char **argv)
 	char message[65535], server_reply[65535];
 
 	//Create socket
-	sock = get_socket(argv);
+	sock = get_socket(argv[1], argv[2]);
 	if (sock == -1)
 	{
 		fputs("Could not create socket\n", stderr);
