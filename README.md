@@ -6,12 +6,13 @@ have to say job well done on that, but other than that I won't make any
 guarantees that it won't feed your cat to gremlins, it probably will.
 
 ncc has been tested to compile and work on recent versions of FreeBSD,
-OpenBSD, NetBSD, OpenBSD and CentOS.  It will probably also work on
-other OSes, YMMV.  It will only work as a TCP client, no UDP, no server
-mode and no fancy features such as source address selection.
+NetBSD, OpenBSD and CentOS.  It will probably also work on other OSes,
+YMMV.  It will only work as a TCP client, no UDP, no server mode and no
+fancy features such as source address selection.
 
 This version uses [select(2)](https://www.freebsd.org/cgi/man.cgi?query=select&sektion=2)
 to do its job, I intend to also try other mechanisms.
+
 
 ## Compilation
 
@@ -23,6 +24,7 @@ If your operating system doesn't come with a compiler you may rectify
 the situation with:
 
 	yum install gcc
+
 
 ## Usage
 
