@@ -16,9 +16,6 @@
 
 #include <errno.h>
 
-#define STDIN 0
-#define STDOUT 1
-
 #define SOCK_LOCAL 1
 #define SOCK_REMOTE 2
 
@@ -27,7 +24,7 @@ int readdata(int fd, char *data, size_t datalen)
 	int retval = read(fd, data, datalen);
 	if (retval < 0)
 	{
-		perror(fd == STDIN ? "read() from stdin" : "");
+		perror(fd == STDIN_FILENO ? "read() from stdin" : "");
 	}
 	return retval;
 }
@@ -37,7 +34,7 @@ int writedata(int fd, char *data, size_t datalen)
 	int retval = write(fd, data, datalen);
 	if (retval < 0)
 	{
-		perror(fd == STDOUT ? "write() to stdout" : "");
+		perror(fd == STDOUT_FILENO ? "write() to stdout" : "");
 	}
 	return retval;
 }
@@ -45,11 +42,11 @@ int writedata(int fd, char *data, size_t datalen)
 int wait_for_data(int sock, fd_set *readfds, fd_set *writefds, int has_data_for_tcp, int has_data_for_stdout, int dead_sock_map)
 {
 	FD_ZERO(readfds);
-	if (!has_data_for_tcp && !(dead_sock_map & SOCK_LOCAL)) FD_SET(STDIN, readfds);
+	if (!has_data_for_tcp && !(dead_sock_map & SOCK_LOCAL)) FD_SET(STDIN_FILENO, readfds);
 	if (!has_data_for_stdout && !(dead_sock_map & SOCK_REMOTE)) FD_SET(sock, readfds);
 	FD_ZERO(writefds);
 	if (has_data_for_tcp) FD_SET(sock, writefds);
-	if (has_data_for_stdout) FD_SET(STDOUT, writefds);
+	if (has_data_for_stdout) FD_SET(STDOUT_FILENO, writefds);
 
 	int retval = select(sock+1, readfds, writefds, NULL, NULL);
 	if (retval < 0)
@@ -158,10 +155,10 @@ int main(int argc, char **argv)
 			return 1;
 		}
 
-		if (FD_ISSET(STDIN, &readfds))
+		if (FD_ISSET(STDIN_FILENO, &readfds))
 		{
 			//fprintf(stderr, "<");
-			len_data_for_tcp = readdata(STDIN, message, sizeof(message));
+			len_data_for_tcp = readdata(STDIN_FILENO, message, sizeof(message));
 			if (len_data_for_tcp == 0)
 			{
 				shutdown(sock, SHUT_WR);
@@ -183,10 +180,10 @@ int main(int argc, char **argv)
 			}
 		}
 
-		if (FD_ISSET(STDOUT, &writefds))
+		if (FD_ISSET(STDOUT_FILENO, &writefds))
 		{
 			//fprintf(stderr, ">");
-			writedata(STDOUT, server_reply, len_data_for_stdout);
+			writedata(STDOUT_FILENO, server_reply, len_data_for_stdout);
 			len_data_for_stdout = 0;
 		}
 
