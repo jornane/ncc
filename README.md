@@ -26,6 +26,14 @@ the situation with:
 	yum install gcc
 
 
+## Installation
+
+If you really like `ncc` and you'd like it to be available as a general
+command, simply install it in **/usr/local/bin**.
+
+	make install
+
+
 ## Usage
 
 	ncc host port
