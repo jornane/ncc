@@ -110,7 +110,7 @@ int get_socket(char *host, char *service)
 
 		if (connect(sfd, rp->ai_addr, rp->ai_addrlen) != -1)
 		{
-			fprintf(stderr, " Connected.\n");
+			fprintf(stderr, " Connected\n");
 			freeaddrinfo(result);
 			return sfd;
 		}
